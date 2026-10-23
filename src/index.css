@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --primary-navy: #073B7A;
+  --primary-blue: #0969DA;
+  --primary-light: #2388F5;
+  --accent-cyan: #00B8D9;
+  --bg-page: #F4F9FF;
+  --card-bg: #FFFFFF;
+  --text-main: #12305B;
+  --border-light: #DBE8F7;
+}
+
+* {
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+body {
+  font-family: "Times New Roman", Times, serif !important;
+  background-color: #F4F9FF;
+  color: #12305B;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, button, select, textarea, pre, code, kbd, samp {
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #EEF5FC;
+}
+::-webkit-scrollbar-thumb {
+  background: #B9D5F3;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0969DA;
+}
+
+/* Print layout for report cards */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
