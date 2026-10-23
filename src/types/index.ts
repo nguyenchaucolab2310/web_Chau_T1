@@ -147,3 +147,30 @@ export interface ClassSummary {
   avgExamScore: number;
   avgPracticalScore: number;
 }
+
+export type AttendanceStatus = 'present' | 'late' | 'excused' | 'unexcused';
+
+export interface StudentAttendanceRecord {
+  studentId: string;
+  studentName: string;
+  status: AttendanceStatus;
+  note?: string;
+  timeCheckedIn?: string;
+}
+
+export interface AttendanceSession {
+  id: string;
+  date: string; // "YYYY-MM-DD" e.g. "2025-04-22"
+  class: string; // "12A1"
+  period: string; // "Tiết 1 - 2"
+  lessonTitle?: string;
+  teacherNotes?: string;
+  createdAt: string;
+  records: StudentAttendanceRecord[];
+  totalStudents: number;
+  totalPresent: number;
+  totalLate: number;
+  totalExcused: number;
+  totalUnexcused: number;
+}
+

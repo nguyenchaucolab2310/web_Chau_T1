@@ -15,17 +15,17 @@ import { QuizzesModule } from './components/modules/QuizzesModule';
 import { StudentsModule } from './components/modules/StudentsModule';
 import { ResultsModule } from './components/modules/ResultsModule';
 import { AIAssistantModule } from './components/modules/AIAssistantModule';
-import { FirebaseSetupModal } from './components/modals/FirebaseSetupModal';
+import { SupabaseModal } from './components/modals/SupabaseModal';
 import { Database, RotateCcw, CheckCircle, Info, AlertCircle } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { activeTab, toast, resetAllDemoData } = useApp();
-  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
+  const { activeTab, toast, resetAllDemoData, isSupabaseConfigured, supabaseConnected } = useApp();
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F4F9FF] text-[#12305B] flex flex-col font-serif selection:bg-[#0969DA] selection:text-white">
       {/* 1. Header (Brand, search, notifications, profile) */}
-      <Header onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)} />
+      <Header onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)} />
 
       {/* 2. Horizontal Navbar (6 tabs matching reference) */}
       <Navbar />
@@ -34,24 +34,33 @@ const AppContent: React.FC = () => {
       <div className="bg-[#E6F4FF] border-b border-[#BFDBFE] text-[#073B7A] py-1.5 px-4 text-xs font-serif shadow-2xs">
         <div className="max-w-[1520px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-center sm:text-left">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                supabaseConnected ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            />
             <span>
-              <strong>Chế độ trải nghiệm trực tiếp</strong> – Dữ liệu học sinh, bài thực hành và điểm số được lưu trên trình duyệt (LocalStorage).
+              <strong>Cơ sở dữ liệu Supabase:</strong>{' '}
+              {isSupabaseConfigured
+                ? 'Đã kết nối thông số URL & Key (wanqgoqrcegkateqavll.supabase.co)'
+                : 'Chưa cấu hình Supabase'}
+              {' · '}
+              <span className="text-slate-600">Đồng bộ tự động đám mây & lưu trữ trình duyệt an toàn.</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => setIsFirebaseModalOpen(true)}
-              className="hover:underline flex items-center gap-1 font-semibold text-[#0969DA]"
+              onClick={() => setIsSupabaseModalOpen(true)}
+              className="hover:underline flex items-center gap-1 font-semibold text-[#0969DA] cursor-pointer"
             >
-              <Database className="w-3.5 h-3.5" />
-              <span>Cấu trúc Firebase Cloud</span>
+              <Database className="w-3.5 h-3.5 text-[#3ECF8E]" />
+              <span>Quản lý & Đồng bộ Supabase</span>
             </button>
             <span className="text-slate-300">|</span>
             <button
               onClick={resetAllDemoData}
-              className="hover:text-rose-600 transition flex items-center gap-1 text-slate-500"
+              className="hover:text-rose-600 transition flex items-center gap-1 text-slate-500 cursor-pointer"
               title="Khôi phục lại dữ liệu mẫu gốc"
             >
               <RotateCcw className="w-3 h-3" />
@@ -119,10 +128,10 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Firebase Information Modal */}
-      <FirebaseSetupModal
-        isOpen={isFirebaseModalOpen}
-        onClose={() => setIsFirebaseModalOpen(false)}
+      {/* Supabase Database Modal */}
+      <SupabaseModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
       />
     </div>
   );

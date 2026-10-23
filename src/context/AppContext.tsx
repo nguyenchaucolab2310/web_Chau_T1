@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Student,
   Lesson,
@@ -21,6 +21,8 @@ import {
   INITIAL_ACTIVITIES,
   INITIAL_SUBMISSIONS
 } from '../data/mockData';
+import { SupabaseService } from '../lib/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export type ActiveTab = 'home' | 'lessons' | 'practical' | 'quizzes' | 'students' | 'results' | 'ai-assistant';
 
@@ -74,6 +76,11 @@ interface AppContextType {
   toast: { message: string; type: 'success' | 'info' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   resetAllDemoData: () => void;
+
+  // Supabase Sync helpers
+  isSupabaseConfigured: boolean;
+  supabaseConnected: boolean;
+  refreshFromSupabase: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -96,6 +103,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [activeExerciseId, setActiveExerciseId] = useState<string | null>('ex-1-text-formatting');
   const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
+
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
 
   // Load from LocalStorage or defaults
   const [students, setStudents] = useState<Student[]>(() => {
@@ -171,6 +180,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return INITIAL_ACTIVITIES;
     }
   });
+
+  // Function to refresh from Supabase if tables exist
+  const refreshFromSupabase = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+
+    try {
+      const [remoteStudents, remoteLessons, remoteSubs, remoteQuizzes, remoteAttempts] = await Promise.all([
+        SupabaseService.getStudents(),
+        SupabaseService.getLessons(),
+        SupabaseService.getSubmissions(),
+        SupabaseService.getQuizzes(),
+        SupabaseService.getQuizAttempts(),
+      ]);
+
+      let hasData = false;
+
+      if (remoteStudents && remoteStudents.length > 0) {
+        setStudents(remoteStudents);
+        hasData = true;
+      }
+      if (remoteLessons && remoteLessons.length > 0) {
+        setLessons(remoteLessons);
+        hasData = true;
+      }
+      if (remoteSubs && remoteSubs.length > 0) {
+        setSubmissions(remoteSubs);
+        hasData = true;
+      }
+      if (remoteQuizzes && remoteQuizzes.length > 0) {
+        setQuizzes(remoteQuizzes);
+        hasData = true;
+      }
+      if (remoteAttempts && remoteAttempts.length > 0) {
+        setQuizAttempts(remoteAttempts);
+        hasData = true;
+      }
+
+      setSupabaseConnected(hasData || remoteStudents !== null);
+    } catch (err) {
+      console.warn('Could not sync with Supabase tables on boot:', err);
+    }
+  }, []);
+
+  // Attempt initial Supabase load on boot
+  useEffect(() => {
+    refreshFromSupabase();
+  }, [refreshFromSupabase]);
 
   // Auto-save to LocalStorage
   useEffect(() => {
@@ -253,6 +309,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setStudents(prev => [newStudent, ...prev]);
 
+    // Async push to Supabase
+    SupabaseService.upsertStudent(newStudent).catch(err => {
+      console.warn('Supabase sync student failed:', err);
+    });
+
     // Record activity
     setActivities(prev => [
       {
@@ -270,9 +331,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateStudent = (updatedStudent: Student) => {
     const rating = calculateRating(updatedStudent.examScore, updatedStudent.practicalScore);
+    const fullStudent: Student = { ...updatedStudent, rating };
+
     setStudents(prev =>
-      prev.map(s => (s.id === updatedStudent.id ? { ...updatedStudent, rating } : s))
+      prev.map(s => (s.id === updatedStudent.id ? fullStudent : s))
     );
+
+    // Async push to Supabase
+    SupabaseService.upsertStudent(fullStudent).catch(err => {
+      console.warn('Supabase update student failed:', err);
+    });
 
     // Record activity
     setActivities(prev => [
@@ -292,6 +360,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteStudent = (id: string) => {
     const target = students.find(s => s.id === id);
     setStudents(prev => prev.filter(s => s.id !== id));
+
+    // Async push to Supabase
+    SupabaseService.deleteStudent(id).catch(err => {
+      console.warn('Supabase delete student failed:', err);
+    });
+
     showToast(`Đã xóa học sinh ${target ? target.name : id} khỏi danh sách!`, 'info');
   };
 
@@ -309,6 +383,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return Array.from(map.values());
     });
 
+    // Async push batch to Supabase
+    SupabaseService.batchInsertStudents(processed).catch(err => {
+      console.warn('Supabase batch insert failed:', err);
+    });
+
     showToast(`Nhập dữ liệu thành công! Đã cập nhật ${processed.length} học sinh.`, 'success');
   };
 
@@ -320,22 +399,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString().split('T')[0],
     };
     setLessons(prev => [newLesson, ...prev]);
+
+    // Async push to Supabase
+    SupabaseService.upsertLesson(newLesson).catch(err => {
+      console.warn('Supabase lesson failed:', err);
+    });
+
     showToast(`Đã tạo bài học mới: ${newLesson.code} - ${newLesson.title}`);
   };
 
   const updateLesson = (updatedLesson: Lesson) => {
+    const fullLesson: Lesson = {
+      ...updatedLesson,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
     setLessons(prev =>
-      prev.map(l =>
-        l.id === updatedLesson.id
-          ? { ...updatedLesson, updatedAt: new Date().toISOString().split('T')[0] }
-          : l
-      )
+      prev.map(l => (l.id === updatedLesson.id ? fullLesson : l))
     );
+
+    // Async push to Supabase
+    SupabaseService.upsertLesson(fullLesson).catch(err => {
+      console.warn('Supabase update lesson failed:', err);
+    });
+
     showToast(`Đã lưu thay đổi cho bài học ${updatedLesson.title}`);
   };
 
   const deleteLesson = (id: string) => {
     setLessons(prev => prev.filter(l => l.id !== id));
+
+    // Async push to Supabase
+    SupabaseService.deleteLesson(id).catch(err => {
+      console.warn('Supabase delete lesson failed:', err);
+    });
+
     showToast('Đã xóa bài học thành công.', 'info');
   };
 
@@ -347,6 +445,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       submittedAt: new Date().toLocaleString('vi-VN'),
     };
     setSubmissions(prev => [newSub, ...prev]);
+
+    // Async push to Supabase
+    SupabaseService.upsertSubmission(newSub).catch(err => {
+      console.warn('Supabase submit practical failed:', err);
+    });
 
     // Record activity
     setActivities(prev => [
@@ -364,13 +467,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const gradePractical = (submissionId: string, score: number, comment: string) => {
+    let updatedSub: PracticalSubmission | null = null;
     setSubmissions(prev =>
-      prev.map(sub =>
-        sub.id === submissionId
-          ? { ...sub, score, teacherComment: comment, status: 'Đã chấm' }
-          : sub
-      )
+      prev.map(sub => {
+        if (sub.id === submissionId) {
+          updatedSub = { ...sub, score, teacherComment: comment, status: 'Đã chấm' };
+          return updatedSub;
+        }
+        return sub;
+      })
     );
+
+    if (updatedSub) {
+      SupabaseService.upsertSubmission(updatedSub).catch(err => {
+        console.warn('Supabase grade practical failed:', err);
+      });
+    }
 
     // Also update practicalScore of student if found
     const targetSub = submissions.find(s => s.id === submissionId);
@@ -380,7 +492,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (s.id === targetSub.studentId) {
             const updatedPrac = score;
             const newRating = calculateRating(s.examScore, updatedPrac);
-            return { ...s, practicalScore: updatedPrac, rating: newRating };
+            const fullStud = { ...s, practicalScore: updatedPrac, rating: newRating };
+            SupabaseService.upsertStudent(fullStud).catch(() => {});
+            return fullStud;
           }
           return s;
         })
@@ -397,6 +511,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `quiz-${Date.now()}`,
     };
     setQuizzes(prev => [newQuiz, ...prev]);
+
+    SupabaseService.upsertQuiz(newQuiz).catch(err => {
+      console.warn('Supabase quiz failed:', err);
+    });
+
     showToast(`Đã tạo đề kiểm tra: ${newQuiz.title}`);
   };
 
@@ -408,12 +527,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setQuizAttempts(prev => [newAttempt, ...prev]);
 
+    SupabaseService.insertQuizAttempt(newAttempt).catch(err => {
+      console.warn('Supabase attempt failed:', err);
+    });
+
     // Update student examScore
     setStudents(prev =>
       prev.map(s => {
         if (s.id === attemptData.studentId) {
           const newRating = calculateRating(attemptData.score, s.practicalScore);
-          return { ...s, examScore: attemptData.score, rating: newRating };
+          const fullStud = { ...s, examScore: attemptData.score, rating: newRating };
+          SupabaseService.upsertStudent(fullStud).catch(() => {});
+          return fullStud;
         }
         return s;
       })
@@ -529,6 +654,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toast,
         showToast,
         resetAllDemoData,
+        isSupabaseConfigured,
+        supabaseConnected,
+        refreshFromSupabase,
       }}
     >
       {children}

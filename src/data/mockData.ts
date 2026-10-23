@@ -1,4 +1,4 @@
-import { Student, Lesson, PracticalExercise, PracticalSubmission, Quiz, ScheduleEvent, NotificationItem, ActivityItem } from '../types';
+import { Student, Lesson, PracticalExercise, PracticalSubmission, Quiz, ScheduleEvent, NotificationItem, ActivityItem, AttendanceSession } from '../types';
 
 export const INITIAL_STUDENTS: Student[] = [
   {
@@ -807,3 +807,68 @@ export const INITIAL_SUBMISSIONS: PracticalSubmission[] = [
     status: 'Đã chấm'
   }
 ];
+
+export const INITIAL_ATTENDANCE_SESSIONS: AttendanceSession[] = [
+  {
+    id: 'att-session-1',
+    date: '2025-04-23',
+    class: '12A1',
+    period: 'Tiết 1 - 2',
+    lessonTitle: 'Bài 3. Thiết kế giao diện Web với CSS Grid & Flexbox',
+    teacherNotes: 'Lớp học nghiêm túc, đủ sĩ số tại phòng máy số 2.',
+    createdAt: '2025-04-23 07:15',
+    records: [
+      { studentId: 'HS1201', studentName: 'Nguyễn Văn An', status: 'present', note: 'Có mặt đúng giờ' },
+      { studentId: 'HS1202', studentName: 'Trần Thị Bích Ngọc', status: 'present' },
+      { studentId: 'HS1206', studentName: 'Đặng Thanh Tùng', status: 'late', note: 'Đến muộn 10 phút do hỏng xe đạp' },
+      { studentId: 'HS1212', studentName: 'Lê Hoàng Nam', status: 'present' },
+      { studentId: 'HS1215', studentName: 'Đỗ Thùy Trang', status: 'present' }
+    ],
+    totalStudents: 5,
+    totalPresent: 4,
+    totalLate: 1,
+    totalExcused: 0,
+    totalUnexcused: 0
+  },
+  {
+    id: 'att-session-2',
+    date: '2025-04-22',
+    class: '12A2',
+    period: 'Tiết 3 - 4',
+    lessonTitle: 'Bài 4. Lập trình JavaScript tương tác DOM',
+    teacherNotes: 'Em Phạm Thị Yến Nhi ốm có giấy phép gửi GVCN.',
+    createdAt: '2025-04-22 09:05',
+    records: [
+      { studentId: 'HS1203', studentName: 'Lê Minh Khang', status: 'present' },
+      { studentId: 'HS1204', studentName: 'Phạm Thị Yến Nhi', status: 'excused', note: 'Nghỉ ốm (có phép của PH)' },
+      { studentId: 'HS1207', studentName: 'Võ Mai Phương', status: 'present' },
+      { studentId: 'HS1213', studentName: 'Nguyễn Thị Hồng', status: 'present' }
+    ],
+    totalStudents: 4,
+    totalPresent: 3,
+    totalLate: 0,
+    totalExcused: 1,
+    totalUnexcused: 0
+  },
+  {
+    id: 'att-session-3',
+    date: '2025-04-21',
+    class: '11A1',
+    period: 'Tiết 1 - 2',
+    lessonTitle: 'Bài 2. Hàm và đệ quy trong ngôn ngữ Python',
+    teacherNotes: 'Kiểm tra máy số 7 và số 12 bị kẹt bàn phím.',
+    createdAt: '2025-04-21 07:10',
+    records: [
+      { studentId: 'HS1101', studentName: 'Bùi Anh Tuấn', status: 'present' },
+      { studentId: 'HS1102', studentName: 'Lê Thị Mỹ Duyên', status: 'present' },
+      { studentId: 'HS1103', studentName: 'Phan Trọng Nghĩa', status: 'unexcused', note: 'Không rõ lý do, đã báo GVCN' },
+      { studentId: 'HS1104', studentName: 'Vũ Thu Thảo', status: 'present' }
+    ],
+    totalStudents: 4,
+    totalPresent: 3,
+    totalLate: 0,
+    totalExcused: 0,
+    totalUnexcused: 1
+  }
+];
+

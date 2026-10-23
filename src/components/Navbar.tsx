@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp, ActiveTab } from '../context/AppContext';
-import { Home, BookOpen, Wrench, CheckSquare, Users, BarChart3, Bot } from 'lucide-react';
+import { Home, BookOpen, Wrench, CheckSquare, Users, BarChart3, Bot, UserCheck } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { activeTab, setActiveTab } = useApp();
@@ -11,6 +11,7 @@ export const Navbar: React.FC = () => {
     { id: 'practical', label: 'Thực hành', icon: <Wrench className="w-4 h-4" /> },
     { id: 'quizzes', label: 'Kiểm tra', icon: <CheckSquare className="w-4 h-4" /> },
     { id: 'students', label: 'Danh sách học sinh', icon: <Users className="w-4 h-4" /> },
+    { id: 'attendance', label: 'Điểm danh', icon: <UserCheck className="w-4 h-4" /> },
     { id: 'results', label: 'Kết quả học tập', icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
